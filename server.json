@@ -1,0 +1,33 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.donnywin85/arb-dex-mcp",
+  "description": "Live cross-DEX pool prices, liquidity and gross cross-venue spreads on 6 EVM chains (BSC, Polygon, Arbitrum, Base, Avalanche, Optimism), read directly from on-chain pool state at a stated block. Bring your own RapidAPI key; three tools also work keyless against a free hourly snapshot.",
+  "repository": {
+    "url": "https://github.com/donnywin85/arb-dex-mcp",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "arb-dex-mcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "RAPIDAPI_KEY",
+          "description": "Your own RapidAPI key for the Multi-Chain DEX Prices & Liquidity API (https://rapidapi.com/donnydev/api/multi-chain-dex-prices-liquidity). The free-tier subscription is enough to start. Required for live pool prices and fresh sweeps; without it get_chains, get_pairs and get_spreads fall back to a free hourly public snapshot and say so in the payload.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "ARB_DEX_TIMEOUT_MS",
+          "description": "Optional request timeout in milliseconds. Defaults to 45000 — a full-chain live scan is a real on-chain sweep and can take ~30s.",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

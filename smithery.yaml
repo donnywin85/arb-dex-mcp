@@ -1,0 +1,34 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      rapidapiKey:
+        type: string
+        title: RapidAPI Key
+        description: >-
+          Your own RapidAPI key for the Multi-Chain DEX Prices & Liquidity API
+          (https://rapidapi.com/donnydev/api/multi-chain-dex-prices-liquidity).
+          The free-tier subscription is enough to start. Optional: leave it
+          blank and get_chains, get_pairs and get_spreads still return real data
+          from a free hourly public snapshot, labelled as such. Required for
+          live per-venue pool prices (get_prices) and fresh sweeps.
+      timeoutMs:
+        type: number
+        title: Request timeout (ms)
+        description: >-
+          Optional. A full-chain live scan is a real on-chain sweep and can take
+          ~30s. Defaults to 45000.
+        default: 45000
+    required: []
+  commandFunction: |-
+    (config) => ({
+      command: 'node',
+      args: ['src/index.mjs'],
+      env: {
+        ...(config.rapidapiKey ? { RAPIDAPI_KEY: config.rapidapiKey } : {}),
+        ...(config.timeoutMs ? { ARB_DEX_TIMEOUT_MS: String(config.timeoutMs) } : {})
+      }
+    })
+  exampleConfig:
+    timeoutMs: 45000

@@ -1,6 +1,6 @@
 {
   "name": "arb-dex-mcp",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "MCP server for the arb-dex-data API — live cross-DEX pool prices, liquidity and gross cross-venue spreads on 6 EVM chains (BSC, Polygon, Arbitrum, Base, Avalanche, Optimism), read from on-chain pool state.",
   "main": "src/index.mjs",
   "directories": {
@@ -31,7 +31,7 @@
     "optimism",
     "rapidapi"
   ],
-  "author": "",
+  "author": "donnywin85",
   "license": "MIT",
   "type": "module",
   "dependencies": {
@@ -44,7 +44,9 @@
   "files": [
     "src/",
     "README.md",
-    ".env.example"
+    ".env.example",
+    "server.json",
+    "smithery.yaml"
   ],
   "engines": {
     "node": ">=18"
@@ -52,5 +54,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/donnywin85/arb-dex-mcp.git"
+  },
+  "mcpName": "io.github.donnywin85/arb-dex-mcp",
+  "homepage": "https://github.com/donnywin85/arb-dex-mcp",
+  "bugs": {
+    "url": "https://github.com/donnywin85/arb-dex-mcp/issues"
   }
 }
