@@ -18,6 +18,14 @@ Backed by the [Multi-Chain DEX Prices & Liquidity API](https://rapidapi.com/donn
 | `get_pairs` | What is priceable on one chain: token universe, venues, pair syntax | Optional — falls back to the free snapshot |
 | `get_prices` | One pair's price at **every** venue holding a pool for it, plus reserves, TVL, fee tier and the cross-DEX spread | Required |
 | `get_spreads` | A whole chain's cross-venue dislocations, ranked by gross USD at the optimal size | Optional — free hourly snapshot without a key, fresh on-chain sweep with `live: true` |
+| `get_history_summary` | What the measurement archive covers: rows, pairs tracked, chains seen, span, retention | Required |
+| `get_history` | One pair's per-venue price/liquidity series and gross cross-venue spread over 24h / 7d / 30d | Required |
+
+The two history tools read the service's own measurement archive, so they answer the
+question the live tools cannot: whether a dislocation *persisted* or was a single sample.
+Coverage is only what was measured — sampling is roughly hourly, and a gap stays a gap
+rather than being interpolated or backfilled. Call `get_history_summary` first to see what
+span exists before asking for a window.
 
 Without a key the server still runs and returns real data from the free public surface,
 labelled as such. It never fabricates a row or silently degrades: a paid call with no key
@@ -65,7 +73,7 @@ Windows: `%APPDATA%\Claude\`):
 }
 ```
 
-Restart Claude Desktop; the four tools appear under the connectors icon.
+Restart Claude Desktop; the six tools appear under the connectors icon.
 
 ## Claude Code
 
@@ -83,6 +91,8 @@ Ask your agent:
 - *"What is WBNB/USDT trading at on every BSC venue right now?"*
 - *"Show me the cross-DEX spreads on Polygon — are any actually capturable?"*
 - *"Run a live spread sweep on Arbitrum and rank by gross USD."*
+- *"How much history does arb-dex actually have, and for which chains?"*
+- *"Did the WETH/USDC spread on Base persist over the last 24h or was it one sample?"*
 
 ## Configuration
 
@@ -106,12 +116,14 @@ The test spawns the server over stdio and calls every tool against the **real pr
 API** — nothing is mocked. It asserts on live values (block number, per-venue prices,
 scanned-pair counts), so a run that passes is evidence the data path works end to end.
 
-## Known gap
+## Closed gap
 
-The API's paid measurement archive (`/v1/history/*`) is live on the origin but is not yet
-registered on the RapidAPI listing, so calls through the proxy 404. A `get_history` tool is
-therefore deliberately **absent** rather than shipped broken; it lands once the listing
-exposes those routes.
+The API's paid measurement archive (`/v1/history/*`) was live on the origin but unlisted on
+RapidAPI, so calls through the proxy 404'd and `get_history` was deliberately held back
+rather than shipped broken. Both routes were published on the listing on 2026-08-11 and
+re-measured through the proxy the same day — summary 200, pair series 200, unsupported
+window 400 — so `get_history_summary` and `get_history` ship as tools, each covered by a
+live keyed assertion in the selftest.
 
 ## License
 

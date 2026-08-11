@@ -145,10 +145,48 @@ server.registerTool('get_spreads', {
   });
 }));
 
-// NOTE — the paid history archive (/v1/history/*) is live on the origin but is
-// NOT yet registered on the RapidAPI listing, so calls through the proxy 404
-// (verified 2026-08-11). A get_history tool is therefore deliberately absent
-// rather than shipped broken; add it once the listing exposes those routes.
+// ------------------------------------------------------- get_history_summary
+//
+// The history archive (/v1/history/*) WAS unlisted when the first four tools
+// shipped — the listing 404'd those paths, so a get_history tool would have
+// been shipped broken. Both routes were added to the RapidAPI listing on
+// 2026-08-11 and re-measured through the proxy the same day (summary 200,
+// pair 200, bad window 400), so they are tools now.
+
+const WINDOWS = ['24h', '7d', '30d'];
+
+server.registerTool('get_history_summary', {
+  title: 'What the measurement archive actually covers',
+  description:
+    'Describe the coverage of this API\'s own measurement archive before you query it: how many rows exist, how many distinct pairs are tracked, which chains have been seen, the first and last observation timestamps, the span in hours, and the retention policy. '
+    + 'Call this FIRST to find out whether a window you care about is even covered — the archive only holds what the service measured while it was running, and a missing hour stays a gap rather than being interpolated. '
+    + '`rowsByEra` breaks the archive down by how much detail each row carries: older rows may hold digest totals only, newer ones full per-pair sweeps, so an early row answers fewer questions than a recent one. '
+    + 'Every row was recorded live from on-chain reads; nothing is estimated or backfilled. '
+    + PAID,
+  inputSchema: {},
+}, () => guard(async () => ok(await getPaid('/v1/history/summary'))));
+
+// --------------------------------------------------------------- get_history
+
+server.registerTool('get_history', {
+  title: 'Historical per-venue prices and cross-venue spread for one pair',
+  description:
+    'Time series for a single pair from this API\'s measurement archive: per-venue price and liquidity points, and the GROSS cross-venue spread computed from those same measured venues, over a 24h, 7d or 30d window. '
+    + 'Use this to see how a dislocation behaved over time — whether a spread persisted or was a single-sample artefact — which the live tools (get_prices, get_spreads) cannot tell you because they only see now. '
+    + 'Coverage is whatever was measured: sampling is once per digest build (roughly hourly), each venue reports its own observation count, and gaps mean the service was not running then. They are never interpolated or backfilled. Call get_history_summary first to see which chains and how much span exist. '
+    + 'Spreads are GROSS — before gas, MEV and slippage beyond the optimal size — and are not a profit estimate or trade advice. '
+    + PAID,
+  inputSchema: {
+    chain: chainArg,
+    pair: z.string().describe('Pair as BASE/QUOTE, e.g. "WETH/USDC" (a BASE-QUOTE dash form is accepted too). Only pairs the service has actually measured are in the archive — get_history_summary lists what is tracked.'),
+    window: z.enum(WINDOWS).optional().describe('Look-back window: 24h, 7d or 30d. Default 24h.'),
+  },
+}, ({ chain, pair, window }) => guard(async () => {
+  // The route keys a pair as BASE-QUOTE in the path; agents will write BASE/QUOTE
+  // because that is what every other tool here takes. Accept both.
+  const pairKey = String(pair).trim().replace(/\//g, '-').toUpperCase();
+  return ok(await getPaid(`/v1/history/${chain}/${encodeURIComponent(pairKey)}`, { window }));
+}));
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

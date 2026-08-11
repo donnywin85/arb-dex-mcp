@@ -34,14 +34,18 @@ console.log(`\narb-dex-mcp live test — mode: ${KEYED ? 'KEYED (paid routes)' :
 const { tools } = await client.listTools();
 const names = tools.map((t) => t.name).sort();
 console.log(`tools advertised: ${names.join(', ')}\n`);
-check('all four tools listed', names.length === 4);
+check('all six tools listed', names.length === 6, names.join(','));
 for (const t of tools) {
   check(`${t.name} has a substantive description`, (t.description || '').length > 120,
     `${(t.description || '').length} chars`);
 }
 
 async function call(name, args) {
-  const r = await client.callTool({ name, arguments: args });
+  // A schema-level rejection surfaces as a thrown McpError rather than an isError
+  // result, and both are "the server refused" for the purposes of these checks.
+  let r;
+  try { r = await client.callTool({ name, arguments: args }); }
+  catch (err) { return { error: err?.message || String(err) }; }
   const text = r.content?.map((c) => c.text).join('\n') ?? '';
   if (r.isError) return { error: text };
   try { return { data: JSON.parse(text), text }; } catch { return { error: `non-JSON payload: ${text.slice(0, 200)}` }; }
@@ -125,6 +129,57 @@ async function call(name, args) {
       check('live sweep ranks by gross USD, and says so', /gross USD/i.test(live.data.ranking || ''));
       console.log(`        (live bsc sweep: ${live.data.scannedPairs} pairs, ${live.data.found} opportunities, ${live.data.elapsedMs}ms)`);
     }
+  }
+}
+
+// --- get_history_summary --------------------------------------------------
+{
+  const { data, error } = await call('get_history_summary', {});
+  if (KEYED) {
+    check('get_history_summary returns data', !error, error);
+    if (data) {
+      check('summary is history-summary.v1', data.version === 'history-summary.v1', data.version);
+      check('summary carries a real row count', Number.isInteger(data.rows) && data.rows >= 0, String(data.rows));
+      check('summary carries pairsTracked', Number.isFinite(data.pairsTracked), String(data.pairsTracked));
+      check('summary states its retention policy', typeof data.retention?.rawRetentionDays === 'number');
+      // The per-era counts are derived from the same rows they count. A summary that
+      // drifts here is estimated, not measured.
+      const eraSum = Object.values(data.rowsByEra || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+      check('rowsByEra sums to the row count', data.rows === 0 || eraSum === data.rows, `${eraSum} vs ${data.rows}`);
+      console.log(`        (archive: ${data.rows} rows, ${data.pairsTracked} pairs, chains ${(data.chainsSeen || []).join('/')}, last ${data.lastAt})`);
+    }
+  } else {
+    check('keyless get_history_summary refuses with a key-required message', Boolean(error) && /RAPIDAPI_KEY/.test(error), error);
+  }
+}
+
+// --- get_history ----------------------------------------------------------
+{
+  const { data, error } = await call('get_history', { chain: 'base', pair: 'WETH/USDC', window: '24h' });
+  if (KEYED) {
+    check('get_history(base, WETH/USDC, 24h) returns data', !error, error);
+    if (data) {
+      check('history is history-pair.v1', data.version === 'history-pair.v1', data.version);
+      check('history reports the pair and chain asked for',
+        data.pair === 'WETH/USDC' && data.chainId === 8453, `${data.chain}/${data.pair} chainId=${data.chainId}`);
+      check('history echoes the window', data.window === '24h', data.window);
+      check('history carries per-venue series', Array.isArray(data.venues) && data.venues.length > 0,
+        `${data.venues?.length} venues`);
+      // A claimed observation count that exceeds the points shipped is what a padded
+      // series looks like; a real one is counted off the rows it ships.
+      const consistent = (data.venues || []).every((v) => Array.isArray(v.series) && v.observations === v.series.length);
+      check('every venue ships as many points as it claims', consistent);
+      const positive = (data.venues || []).every((v) => (v.series || []).every((p) => Number(p.price) > 0));
+      check('every historical point carries a positive price', positive);
+      check('history carries the cross-venue spread series', Array.isArray(data.spreadSeries));
+      console.log(`        (24h base WETH/USDC: ${data.rowsInWindow} rows, ${data.venues?.length} venues, ${data.spreadSeries?.length} spread points)`);
+    }
+    // The route validates its own window vocabulary; the tool must surface that
+    // refusal rather than silently substituting a default.
+    const bad = await call('get_history', { chain: 'base', pair: 'WETH/USDC', window: '99z' });
+    check('get_history rejects an unsupported window', Boolean(bad.error), 'expected a rejection');
+  } else {
+    check('keyless get_history refuses with a key-required message', Boolean(error) && /RAPIDAPI_KEY/.test(error), error);
   }
 }
 
