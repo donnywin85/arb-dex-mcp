@@ -1,0 +1,45 @@
+name: publish
+
+# Trusted publishing (OIDC) — no npm token lives in this repo or in GitHub
+# secrets. Configure the trusted publisher once on npmjs.com:
+#   npmjs.com > arb-dex-mcp > Settings > Trusted publisher
+#     Provider: GitHub Actions
+#     Org/repo: donnywin85/arb-dex-mcp
+#     Workflow: publish.yml
+# Then push a v* tag and npm accepts the publish with provenance attached.
+#
+# This exists because npm is deprecating classic tokens and 2FA-bypass
+# automation tokens (GAT deprecation Aug 2026 / Jan 2027). OIDC is the path
+# that survives both deadlines.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for OIDC trusted publishing + provenance
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted publishing needs npm >= 11.5.1; setup-node still ships older.
+      - run: npm install -g npm@latest
+
+      - run: npm ci --omit=dev
+
+      # Cheap, deterministic gate: the entrypoint must at least parse and the
+      # package must contain it. The live-data smoke test needs a RapidAPI key
+      # and is run by hand (npm run selftest) before tagging.
+      - run: node --check src/index.mjs
+
+      - run: npm publish
