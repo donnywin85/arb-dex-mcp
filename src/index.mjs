@@ -16,7 +16,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { getFree, getPaid, hasKey, LISTING_URL } from './api.mjs';
 
-const server = new McpServer({ name: 'arb-dex', version: '0.1.0' });
+// Keep in step with package.json "version" — an MCP client shows this string in
+// its server list, and 0.1.0 against a published 1.0.0 reads as a stale install.
+const server = new McpServer({ name: 'arb-dex', version: '1.0.0' });
 
 const PAID = `Paid route: needs your own RapidAPI key in RAPIDAPI_KEY (free tier available at ${LISTING_URL}).`;
 
