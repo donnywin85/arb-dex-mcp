@@ -156,7 +156,17 @@ async function call(name, args) {
 // --- get_history ----------------------------------------------------------
 {
   const { data, error } = await call('get_history', { chain: 'base', pair: 'WETH/USDC', window: '24h' });
-  if (KEYED) {
+  // The origin started enforcing plan tiers on 2026-08-15: this route is PRO+, and a
+  // BASIC ($0) key gets `tier_required`. That refusal IS the correct behaviour, so a
+  // BASIC key must not fail the suite — but it must not silently pass either. Assert
+  // the refusal is the explicit, named one rather than an empty series or a 500.
+  const tierGated = Boolean(error) && /tier_required/.test(error);
+  if (KEYED && tierGated) {
+    check('get_history below PRO refuses with an explicit tier_required, naming the plan',
+      /requiredTier/.test(error) && /PRO/.test(error), error);
+    check('the tier refusal carries an upgrade URL', /upgradeUrl|rapidapi\.com/.test(error), error);
+    console.log('        (this key is below PRO — the per-pair series is gated, and said so correctly)');
+  } else if (KEYED) {
     check('get_history(base, WETH/USDC, 24h) returns data', !error, error);
     if (data) {
       check('history is history-pair.v1', data.version === 'history-pair.v1', data.version);
@@ -174,8 +184,11 @@ async function call(name, args) {
       check('history carries the cross-venue spread series', Array.isArray(data.spreadSeries));
       console.log(`        (24h base WETH/USDC: ${data.rowsInWindow} rows, ${data.venues?.length} venues, ${data.spreadSeries?.length} spread points)`);
     }
+  }
+  if (KEYED) {
     // The route validates its own window vocabulary; the tool must surface that
-    // refusal rather than silently substituting a default.
+    // refusal rather than silently substituting a default. Checked at every tier —
+    // an unsupported window is rejected before the plan gate is reached.
     const bad = await call('get_history', { chain: 'base', pair: 'WETH/USDC', window: '99z' });
     check('get_history rejects an unsupported window', Boolean(bad.error), 'expected a rejection');
   } else {

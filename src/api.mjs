@@ -35,6 +35,27 @@ function qs(params) {
   return s ? `?${s}` : '';
 }
 
+// The origin's error bodies are structured and the ACTIONABLE fields sit late in
+// them — a tier_required payload leads with a long `tiers` blurb and ends with
+// `upgradeUrl`. Blind-truncating the raw JSON to a fixed budget therefore cut off
+// exactly the part an agent needs, and left it holding un-parseable half-JSON.
+// Lift the fields that tell a caller what happened and what to do, in that order,
+// and only fall back to truncation for genuinely unstructured bodies.
+const ERROR_FIELDS = ['error', 'detail', 'route', 'yourTier', 'requiredTier', 'unlocks', 'upgradeUrl', 'message'];
+
+function errorDetail(body) {
+  if (typeof body === 'string') return body.slice(0, 400);
+  if (!body || typeof body !== 'object') return String(body).slice(0, 400);
+
+  const named = ERROR_FIELDS
+    .filter((k) => body[k] !== undefined && body[k] !== null && body[k] !== '')
+    .map((k) => `${k}: ${String(body[k])}`);
+
+  // Nothing recognisable — fall back to the old behaviour rather than swallowing it.
+  if (!named.length) return JSON.stringify(body).slice(0, 400);
+  return named.join(' | ').slice(0, 700);
+}
+
 async function request(url, headers) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
@@ -56,8 +77,7 @@ async function request(url, headers) {
   try { body = JSON.parse(text); } catch { body = text; }
 
   if (!res.ok) {
-    const detail = typeof body === 'string' ? body.slice(0, 400) : JSON.stringify(body).slice(0, 400);
-    throw new ApiError(`upstream HTTP ${res.status}: ${detail}`);
+    throw new ApiError(`upstream HTTP ${res.status}: ${errorDetail(body)}`);
   }
   return body;
 }

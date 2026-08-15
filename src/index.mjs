@@ -18,9 +18,18 @@ import { getFree, getPaid, hasKey, LISTING_URL } from './api.mjs';
 
 // Keep in step with package.json "version" — an MCP client shows this string in
 // its server list, and 0.1.0 against a published 1.0.0 reads as a stale install.
-const server = new McpServer({ name: 'arb-dex', version: '1.0.0' });
+const server = new McpServer({ name: 'arb-dex', version: '1.0.1' });
 
 const PAID = `Paid route: needs your own RapidAPI key in RAPIDAPI_KEY (free tier available at ${LISTING_URL}).`;
+
+// The origin enforces plan tiers as of 2026-08-15. Measured on a BASIC key that
+// day: /chains, /dex, /scan and /v1/history/summary all return 200; only the
+// per-pair history series returns tier_required. Say so in the tool description
+// rather than letting an agent discover it as a runtime error.
+const PRO_TIER =
+  'PLAN: this specific route is included from the PRO plan ($15/mo) upward — a BASIC ($0) key '
+  + 'returns an explicit tier_required error naming the plan and upgrade URL, never an empty series. '
+  + 'Every other tool on this server works on the free BASIC tier.';
 
 const CHAINS = ['bsc', 'polygon', 'arbitrum', 'base', 'avalanche', 'optimism'];
 
@@ -164,7 +173,7 @@ server.registerTool('get_history_summary', {
     + 'Call this FIRST to find out whether a window you care about is even covered — the archive only holds what the service measured while it was running, and a missing hour stays a gap rather than being interpolated. '
     + '`rowsByEra` breaks the archive down by how much detail each row carries: older rows may hold digest totals only, newer ones full per-pair sweeps, so an early row answers fewer questions than a recent one. '
     + 'Every row was recorded live from on-chain reads; nothing is estimated or backfilled. '
-    + PAID,
+    + PAID + ' Included on the free BASIC tier, so an agent can size the archive before deciding whether the per-pair series (get_history, PRO) is worth buying.',
   inputSchema: {},
 }, () => guard(async () => ok(await getPaid('/v1/history/summary'))));
 
@@ -177,7 +186,7 @@ server.registerTool('get_history', {
     + 'Use this to see how a dislocation behaved over time — whether a spread persisted or was a single-sample artefact — which the live tools (get_prices, get_spreads) cannot tell you because they only see now. '
     + 'Coverage is whatever was measured: sampling is once per digest build (roughly hourly), each venue reports its own observation count, and gaps mean the service was not running then. They are never interpolated or backfilled. Call get_history_summary first to see which chains and how much span exist. '
     + 'Spreads are GROSS — before gas, MEV and slippage beyond the optimal size — and are not a profit estimate or trade advice. '
-    + PAID,
+    + PAID + ' ' + PRO_TIER,
   inputSchema: {
     chain: chainArg,
     pair: z.string().describe('Pair as BASE/QUOTE, e.g. "WETH/USDC" (a BASE-QUOTE dash form is accepted too). Only pairs the service has actually measured are in the archive — get_history_summary lists what is tracked.'),

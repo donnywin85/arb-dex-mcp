@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>arb-dex-mcp — live cross-DEX crypto prices for your AI agent</title>
+<meta name="description" content="MCP server for live cross-DEX crypto prices: per-venue pool price, liquidity and gross cross-venue spread on 6 EVM chains, read from on-chain pool state. Works keyless. For Claude, Cursor and any MCP client.">
+<link rel="canonical" href="https://donnywin85.github.io/arb-dex-mcp/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="arb-dex-mcp — live cross-DEX crypto prices for your AI agent">
+<meta property="og:description" content="Per-venue pool price, liquidity and gross cross-venue spread on 6 EVM chains, read from on-chain pool state. Works keyless.">
+<meta property="og:url" content="https://donnywin85.github.io/arb-dex-mcp/">
+<meta name="twitter:card" content="summary">
+<style>
+  :root {
+    --bg: #0d1117; --panel: #151b23; --line: #2a313c; --ink: #e6edf3;
+    --muted: #9aa7b4; --accent: #58a6ff; --good: #3fb950; --warn: #d29922;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#ffffff; --panel:#f6f8fa; --line:#d8dee4; --ink:#1f2328; --muted:#59636e; --accent:#0969da; --good:#1a7f37; --warn:#9a6700; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.65 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 56px 20px 96px; }
+  h1 { font-size: 2.1rem; line-height: 1.2; margin: 0 0 .35em; letter-spacing: -.02em; }
+  h2 { font-size: 1.3rem; margin: 2.6em 0 .6em; letter-spacing: -.01em;
+       border-bottom: 1px solid var(--line); padding-bottom: .3em; }
+  h3 { font-size: 1rem; margin: 1.8em 0 .5em; color: var(--muted); font-weight: 600; }
+  p { margin: 0 0 1em; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .lede { font-size: 1.15rem; color: var(--ink); }
+  .sub { color: var(--muted); }
+  code, pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+  code { background: var(--panel); border: 1px solid var(--line); border-radius: 5px;
+         padding: .12em .38em; font-size: .88em; }
+  pre { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+        padding: 14px 16px; overflow-x: auto; font-size: .84rem; line-height: 1.55; margin: 0 0 1em; }
+  pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+  .badges { margin: 0 0 1.6em; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badges img { height: 20px; }
+  table { border-collapse: collapse; width: 100%; margin: 0 0 1em; font-size: .93rem; }
+  th, td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; vertical-align: top; }
+  th { background: var(--panel); font-weight: 600; }
+  .note { border-left: 3px solid var(--warn); background: var(--panel);
+          padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 0 0 1.2em; font-size: .95rem; }
+  .chains { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 1.4em; }
+  .chip { background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+          padding: 3px 12px; font-size: .82rem; color: var(--muted); }
+  footer { margin-top: 4em; padding-top: 1.4em; border-top: 1px solid var(--line);
+           color: var(--muted); font-size: .88rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>arb-dex-mcp</h1>
+<p class="lede"><strong>Live cross-DEX crypto prices for your AI agent</strong> — per-venue pool
+price, pool liquidity and the gross cross-venue spread on 6 EVM chains, read straight from
+on-chain pool state.</p>
+
+<div class="badges">
+  <a href="https://www.npmjs.com/package/arb-dex-mcp"><img src="https://img.shields.io/npm/v/arb-dex-mcp" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/arb-dex-mcp"><img src="https://img.shields.io/npm/dw/arb-dex-mcp" alt="npm downloads"></a>
+  <a href="https://registry.modelcontextprotocol.io/v0/servers?search=arb-dex"><img src="https://img.shields.io/badge/MCP%20Registry-listed-blue" alt="MCP Registry"></a>
+  <a href="https://github.com/donnywin85/arb-dex-mcp/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/arb-dex-mcp" alt="MIT license"></a>
+</div>
+
+<div class="chains">
+  <span class="chip">BSC</span><span class="chip">Polygon</span><span class="chip">Arbitrum</span>
+  <span class="chip">Base</span><span class="chip">Avalanche</span><span class="chip">Optimism</span>
+</div>
+
+<p>Venues: PancakeSwap (v2&nbsp;+&nbsp;v3), Uniswap&nbsp;v3, SushiSwap, QuickSwap, Biswap,
+ApeSwap, BaseSwap, Trader&nbsp;Joe, Pangolin — every v2-style pool <strong>and every v3 fee tier
+separately</strong>, because a $12k 1% pool and a $19M 0.01% pool are not the same quote.</p>
+
+<p>Nothing is modelled, estimated or backfilled. Every payload states its own block number and
+carries its own scope note, so an agent that quotes a figure also has the caveats attached to
+it. <strong>Works with no API key</strong> against a free hourly public snapshot.</p>
+
+<h2 id="quickstart">Quickstart</h2>
+<p class="sub">Nothing to clone or build — your MCP client fetches the package. Requires Node 18+.</p>
+
+<h3>Claude Desktop</h3>
+<p><code>claude_desktop_config.json</code> — macOS <code>~/Library/Application Support/Claude/</code>,
+Windows <code>%APPDATA%\Claude\</code>:</p>
+<pre><code>{
+  "mcpServers": {
+    "arb-dex": {
+      "command": "npx",
+      "args": ["-y", "arb-dex-mcp"],
+      "env": {
+        "RAPIDAPI_KEY": "your-rapidapi-key-here"
+      }
+    }
+  }
+}</code></pre>
+<p>Restart Claude Desktop; the six tools appear under the connectors icon. Drop the
+<code>env</code> block entirely to run keyless.</p>
+
+<h3>Claude Code</h3>
+<pre><code>claude mcp add arb-dex --env RAPIDAPI_KEY=your-key -- npx -y arb-dex-mcp
+
+# keyless
+claude mcp add arb-dex -- npx -y arb-dex-mcp</code></pre>
+<p>Then <code>/mcp</code> to confirm it connected.</p>
+
+<h3>Cursor</h3>
+<p><code>~/.cursor/mcp.json</code> (global) or <code>.cursor/mcp.json</code> (per project) — same
+JSON block as Claude Desktop above.</p>
+
+<h3>Any other MCP client</h3>
+<p>Command <code>npx</code>, args <code>["-y", "arb-dex-mcp"]</code>, transport
+<strong>stdio</strong>, optional env <code>RAPIDAPI_KEY</code>.</p>
+
+<h2 id="example">What comes back</h2>
+<p>Ask: <em>"What is WBNB/USDT trading at on every BSC venue right now?"</em> — measured live
+2026-08-15, trimmed for width, nothing invented:</p>
+<pre><code>{
+  "pair": "WBNB/USDT", "network": "bsc", "blockNumber": 116151268,
+  "pricesByVenue": [
+    { "venue": "pancake",       "surface": "v2", "feeBps": 25,  "price": 611.7347, "tvlUsd": 56834814.36 },
+    { "venue": "biswap",        "surface": "v2", "feeBps": 10,  "price": 610.8278, "tvlUsd": 415733.94 },
+    { "venue": "apeswap",       "surface": "v2", "feeBps": 20,  "price": 611.1244, "tvlUsd": 3659.06 },
+    { "venue": "pancakeV3:1",   "surface": "v3", "feeBps": 1,   "price": 610.5684, "tvlUsd": 18596810.32 },
+    { "venue": "pancakeV3:100", "surface": "v3", "feeBps": 100, "price": 609.1025, "tvlUsd": 12206.21 }
+  ],
+  "bestBuy":  { "venue": "pancakeV3:100", "price": 609.1025 },
+  "bestSell": { "venue": "pancake",       "price": 611.7347 },
+  "midSpreadBps": 43.22,
+  "crossDex": { "grossSpreadBps": 0, "grossUsd": 0,
+                "optimalInput": { "amount": 0, "token": "WBNB", "usd": 0 } },
+  "liquidity": { "venues": 7, "totalTvlUsd": 80856857.67 }
+}</code></pre>
+
+<div class="note">
+<strong>Read the two spread numbers against each other.</strong> The raw mid spread is
+<strong>43&nbsp;bps</strong> and the gross capturable spread is <strong>0</strong>. The 609.10
+quote lives in a $12k pool; the size that would clear it moves the price past the gap before you
+get there. A tool that reported only the 43&nbsp;bps would be handing an agent a number it cannot
+trade. This one reports both — <code>optimalInput</code> is where the honesty lands.
+</div>
+
+<p><code>get_spreads</code> returning <code>"found": 0</code> is a real answer and it is the common
+one. Venues under $1,000 TVL are dropped outright, and ranking is by gross USD at the optimal
+size, never by headline basis points.</p>
+
+<h2 id="tools">Tools</h2>
+<table>
+<tr><th>Tool</th><th>What it answers</th><th>Access</th></tr>
+<tr><td><code>get_chains</code></td><td>Which chains are covered, their chain IDs, tokens and DEX venues</td><td>Any key · keyless returns the chain list only, and says so</td></tr>
+<tr><td><code>get_pairs</code></td><td>What is priceable on one chain: token universe, venues, pair syntax</td><td>Any key · keyless returns the measured subset, labelled</td></tr>
+<tr><td><code>get_prices</code></td><td>One pair's price at <strong>every</strong> venue holding a pool for it, plus reserves, TVL, fee tier and the cross-DEX spread</td><td>Any key</td></tr>
+<tr><td><code>get_spreads</code></td><td>A whole chain's cross-venue dislocations, ranked by gross USD at the optimal size</td><td>Any key for <code>live:&nbsp;true</code> · keyless serves the hourly snapshot</td></tr>
+<tr><td><code>get_history_summary</code></td><td>What the measurement archive covers: rows, pairs tracked, chains seen, span, retention</td><td>Any key (free BASIC tier)</td></tr>
+<tr><td><code>get_history</code></td><td>One pair's per-venue price/liquidity series and gross spread over 24h / 7d / 30d</td><td><strong>PRO plan</strong></td></tr>
+</table>
+
+<h2 id="limits">What it will not do</h2>
+<ul>
+<li><strong>Spreads are gross</strong> — before gas, MEV and slippage beyond the optimal size.
+Not a profit estimate and not trade advice.</li>
+<li><strong>It never fabricates a row.</strong> Keyless answers carry a <code>limitation</code>
+field naming exactly what a key would add; key-required tools return an explicit error with the
+signup link rather than a thinner answer dressed up as a full one.</li>
+<li><strong>It does not execute trades</strong>, hold funds, or touch a wallet. Read-only market data.</li>
+<li><strong>It ships no credentials.</strong> The key is yours and stays in your config.</li>
+</ul>
+
+<h2 id="key">Get a key</h2>
+<p>The paid tools call the API through RapidAPI using <strong>your own</strong> key. Five of the
+six tools work on the free tier — only the per-pair history series is gated.</p>
+<table>
+<tr><th>Plan</th><th>Adds</th></tr>
+<tr><td><strong>BASIC</strong> ($0)</td><td>Live quotes on every chain, plus <code>get_history_summary</code> so you can size the archive before you buy it</td></tr>
+<tr><td><strong>PRO</strong> ($15/mo)</td><td><code>get_history</code> — the measured per-venue series for one pair, 24h window, 1000 calls/mo</td></tr>
+<tr><td><strong>ULTRA</strong> ($49/mo)</td><td>No window limit and no history meter, plus depth/slippage and spread alerts</td></tr>
+<tr><td><strong>MEGA</strong> ($149/mo)</td><td>Bulk paging over the complete archive for your own store</td></tr>
+</table>
+<p><a href="https://rapidapi.com/donnydev/api/multi-chain-dex-prices-liquidity">Subscribe on RapidAPI →</a></p>
+
+<h2 id="config">Configuration</h2>
+<table>
+<tr><th>Env var</th><th>Default</th><th>Purpose</th></tr>
+<tr><td><code>RAPIDAPI_KEY</code></td><td>—</td><td>Your RapidAPI key. Required for the paid tools.</td></tr>
+<tr><td><code>ARB_DEX_TIMEOUT_MS</code></td><td><code>45000</code></td><td>Request timeout. A live full-chain sweep is a real on-chain read and can take ~30s.</td></tr>
+<tr><td><code>ARB_DEX_FREE_BASE_URL</code></td><td>production origin</td><td>Override the free-surface host.</td></tr>
+<tr><td><code>ARB_DEX_RAPIDAPI_HOST</code></td><td><code>multi-chain-dex-prices-liquidity.p.rapidapi.com</code></td><td>Override the RapidAPI host.</td></tr>
+</table>
+
+<footer>
+<p><a href="https://www.npmjs.com/package/arb-dex-mcp">npm</a> ·
+<a href="https://github.com/donnywin85/arb-dex-mcp">GitHub</a> ·
+<a href="https://registry.modelcontextprotocol.io/v0/servers?search=arb-dex">MCP Registry</a> ·
+<a href="https://rapidapi.com/donnydev/api/multi-chain-dex-prices-liquidity">RapidAPI</a> ·
+<a href="https://github.com/donnywin85/arb-dex-mcp/issues">Issues</a></p>
+<p>MIT licensed. Registry name <code>io.github.donnywin85/arb-dex-mcp</code>.
+Sample payloads on this page were measured live on 2026-08-15.</p>
+</footer>
+
+</div>
+</body>
+</html>
