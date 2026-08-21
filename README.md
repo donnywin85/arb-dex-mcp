@@ -8,6 +8,7 @@ and the gross cross-venue spread on 6 EVM chains, read straight from on-chain po
 [![provenance](https://img.shields.io/badge/npm-provenance-brightgreen)](https://www.npmjs.com/package/arb-dex-mcp#provenance)
 [![MCP Registry](https://img.shields.io/badge/MCP%20Registry-io.github.donnywin85%2Farb--dex--mcp-blue)](https://registry.modelcontextprotocol.io/v0/servers?search=arb-dex)
 [![Indexed on TensorBlock MCP Index](https://mcp-index.tensorblock.co/v1/servers/github-donnywin85-arb-dex-mcp-7dd9a70c/badge.svg)](https://www.tensorblock.co/mcp/servers/github-donnywin85-arb-dex-mcp-7dd9a70c)
+[![Listed on mcpservers.org](https://mcpservers.org/badge.svg)](https://mcpservers.org/servers/donnywin85/arb-dex-mcp)
 [![license](https://img.shields.io/npm/l/arb-dex-mcp)](LICENSE)
 
 Chains: **BSC · Polygon · Arbitrum · Base · Avalanche · Optimism**.
